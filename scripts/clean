@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "Cleaning makepkg build artifacts from pkgs/..."
+
+find pkgs -type d \( -name src -o -name pkg \) -prune -exec rm -rf {} +
+
+find pkgs -type f \( \
+  -name "*.pkg.tar.*" \
+  -o -name "*.log" \
+  -o -name ".BUILDINFO" \
+  -o -name ".MTREE" \
+  -o -name ".PKGINFO" \
+\) -delete
+
+echo "Cleaning tracked artifacts from git index..."
+
+git rm -r --cached --ignore-unmatch pkgs/*/src pkgs/*/pkg >/dev/null 2>&1 || true
+git rm --cached --ignore-unmatch pkgs/*/*.pkg.tar.* >/dev/null 2>&1 || true
+git rm --cached --ignore-unmatch pkgs/*/.BUILDINFO pkgs/*/.MTREE pkgs/*/.PKGINFO >/dev/null 2>&1 || true
+
+echo "Done."
+echo
+git status --short
