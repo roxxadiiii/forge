@@ -1,0 +1,13 @@
+pkgname=forge-hello
+pkgver=0.1
+pkgrel=1
+pkgdesc="A tiny test package for the Forge Arch repo"
+arch=('any')
+url="https://github.com/roxx/forge"
+license=('MIT')
+source=('forge-hello')
+sha256sums=('SKIP')
+
+package() {
+    install -Dm755 "$srcdir/forge-hello" "$pkgdir/usr/bin/forge-hello"
+}

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+echo "Hello from Forge repo 🔥"
+echo "Package installed successfully."
