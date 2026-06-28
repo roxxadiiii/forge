@@ -8,7 +8,6 @@ echo "Cleaning makepkg build artifacts from pkgs/..."
 find pkgs -type d \( -name src -o -name pkg \) -prune -exec rm -rf {} +
 
 find pkgs -type f \( \
-  -name "*.pkg.tar.*" \
   -o -name "*.log" \
   -o -name ".BUILDINFO" \
   -o -name ".MTREE" \
