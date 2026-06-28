@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+PKGS="$ROOT/pkgs"
+REPO="$ROOT/repo/x86_64"
+DB_NAME="forge"
+
+need() {
+    command -v "$1" >/dev/null 2>&1 || {
+        echo "Missing command: $1"
+        exit 1
+    }
+}
+
+ask_confirm() {
+    gum confirm "$1"
+}
+
+need gum
+need paru
+need makepkg
+need repo-add
+need git
+
+cd "$ROOT"
+
+gum style \
+    --border rounded \
+    --padding "1 2" \
+    --margin "1 0" \
+    --foreground 212 \
+    "Forge AUR Package Builder"
+
+AURPKG="$(gum input --placeholder "AUR package name, e.g. fastfetch-git")"
+
+if [[ -z "$AURPKG" ]]; then
+    gum style --foreground 203 "No package name given."
+    exit 1
+fi
+
+PKGDIR="$PKGS/$AURPKG"
+
+gum style --foreground 110 "Package: $AURPKG"
+gum style --foreground 110 "Target:  $PKGDIR"
+
+if [[ -d "$PKGDIR" ]]; then
+    gum style --foreground 214 "Package directory already exists."
+
+    if ask_confirm "Update it with git pull?"; then
+        git -C "$PKGDIR" pull
+    else
+        gum style --foreground 245 "Skipping update."
+    fi
+else
+    if ask_confirm "Clone AUR package using paru -G?"; then
+        cd "$PKGS"
+        paru -G "$AURPKG"
+    else
+        gum style --foreground 203 "Cancelled."
+        exit 0
+    fi
+fi
+
+cd "$PKGDIR"
+
+gum style \
+    --border rounded \
+    --padding "1 2" \
+    --margin "1 0" \
+    --foreground 180 \
+    "PKGBUILD preview"
+
+gum pager < PKGBUILD
+
+if ask_confirm "Build package with makepkg -sfc?"; then
+    makepkg -sfc
+else
+    gum style --foreground 203 "Cancelled before build."
+    exit 0
+fi
+
+mapfile -t BUILT_PKGS < <(find . -maxdepth 1 -type f -name "*.pkg.tar.*" ! -name "*.sig" | sort)
+
+if [[ "${#BUILT_PKGS[@]}" -eq 0 ]]; then
+    gum style --foreground 203 "No built package files found."
+    exit 1
+fi
+
+gum style \
+    --border rounded \
+    --padding "1 2" \
+    --margin "1 0" \
+    --foreground 120 \
+    "Built packages"
+
+printf '%s\n' "${BUILT_PKGS[@]}" | gum format
+
+if ask_confirm "Copy built packages to repo/x86_64?"; then
+    mkdir -p "$REPO"
+    cp -v "${BUILT_PKGS[@]}" "$REPO/"
+else
+    gum style --foreground 203 "Cancelled before copying."
+    exit 0
+fi
+
+cd "$REPO"
+
+if ask_confirm "Update pacman repo database?"; then
+    repo-add "$DB_NAME.db.tar.gz" ./*.pkg.tar.zst
+
+    ln -sf "$DB_NAME.db.tar.gz" "$DB_NAME.db"
+    ln -sf "$DB_NAME.files.tar.gz" "$DB_NAME.files"
+else
+    gum style --foreground 203 "Cancelled before repo-add."
+    exit 0
+fi
+
+cd "$ROOT"
+
+if [[ -x "$ROOT/scripts/clean" ]]; then
+    if ask_confirm "Run cleanup script?"; then
+        "$ROOT/scripts/clean"
+    fi
+fi
+
+gum style \
+    --border rounded \
+    --padding "1 2" \
+    --margin "1 0" \
+    --foreground 117 \
+    "Git status"
+
+git status --short | gum format
+
+if ask_confirm "Commit changes?"; then
+    MSG="$(gum input --value "Add $AURPKG package" --placeholder "Commit message")"
+    git add .
+    git commit -m "$MSG"
+fi
+
+if ask_confirm "Push to GitHub?"; then
+    git push
+fi
+
+gum style \
+    --border rounded \
+    --padding "1 2" \
+    --margin "1 0" \
+    --foreground 120 \
+    "Done"
+
+echo
+echo "Refresh and install:"
+echo "  sudo pacman -Syy"
+echo "  sudo pacman -S <real-package-name>"
