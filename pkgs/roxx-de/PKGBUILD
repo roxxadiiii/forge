@@ -1,0 +1,38 @@
+pkgname=roxx-de
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Meta package for Roxx's IDE setup, including Hyprland, Kitty, Fish, and DMS Shell"
+arch=('any')
+url="https://github.com/roxxadiiii/forge"
+license=('MIT')
+depends=(
+    'hyprland-git'
+    'kitty-git'
+    'fish-git'
+    'dms-shell-git'
+    'thunar'
+    'thunar-archive-plugin'
+    'thunar-media-tags-plugin'
+    'thunar-volman'
+    'antigravity-ide'
+    'vscodium-git'
+    'ungoogled-chromium-bin'
+    'gvfs'
+    'gvfs-afc'
+    'gvfs-gphoto2'
+    'gvfs-mtp'
+    'gvfs-nfs'
+    'gvfs-smb'
+    'xarchiver'
+    'qt5ct'
+    'qt6ct'
+    'xdg-desktop-portal'
+    'xdg-desktop-portal-gtk'
+    'xdg-desktop-portal-hyprland'
+)
+
+package() {
+    # Since this is a meta package, it contains no physical files.
+    # An empty package function is all that is required.
+    :
+}
